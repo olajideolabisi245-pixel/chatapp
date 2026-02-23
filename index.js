@@ -1,14 +1,32 @@
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const cors = require('cors');
+
 const app = express();
-const http = require('http').createServer(app);
-const io = require('socket.io')(http);
+app.use(cors());
 
-app.use(express.static('public')); // Tells the server where your HTML is
-
-io.on('connection', (socket) => {
-  socket.on('message', (msg) => {
-    io.emit('message', msg); // Send message to everyone
-  });
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: "*", // Allow all origins for now (Render requirement)
+        methods: ["GET", "POST"]
+    }
 });
 
-http.listen(3000, () => console.log('Listening on port 3000'));
+io.on('connection', (socket) => {
+    console.log('A user connected');
+    
+    socket.on('chat message', (msg) => {
+        io.emit('chat message', msg); // Broadcast to everyone
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected');
+    });
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
